@@ -1,0 +1,10 @@
+simple task
+first task +tag1 +tag2
+(A) task with priority A +tag3
+(B) task with priority B @context1 +tag
+(C) priority C +test due:2020-07-01
+x completed simple task
+x 2020-01-02 2020-01-01 first task completed at jan 2 and created at jan 1 +tag1 +tag2
+x (A) task with priority A +tag3
+x (B) task with priority B @context1 +tag
+x (C) priority C +test due:2020-07-01
