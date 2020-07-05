@@ -6,6 +6,7 @@ package todo
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -24,6 +25,15 @@ type Task struct {
 
 var EmptyDate = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
 
+type ByDate []Task
+
+func (a ByDate) Less(i, j int) bool {
+	lhs, rhs := a[i], a[j]
+	return lhs.CreationDate.Before(rhs.CreationDate)
+}
+func (a ByDate) Len() int  { return len(a) }
+func (a ByDate) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+
 func (t Task) String() string {
 	var complete, priority, completion, creation string
 
@@ -36,11 +46,11 @@ func (t Task) String() string {
 	}
 
 	// Check completion and creation
-	if t.CompletionDate != EmptyDate {
+	if !time.Time.IsZero(t.CompletionDate) {
 		completion = format(t.CompletionDate) + " "
 	}
 
-	if t.CreationDate != EmptyDate {
+	if !time.Time.IsZero(t.CreationDate) {
 		creation = format(t.CreationDate) + " "
 	}
 
@@ -75,7 +85,7 @@ func ParseTask(raw string) Task {
 
 	var task Task
 
-	if len(raw) <= 1 {
+	if len(raw) == 0 {
 		return task
 	}
 
@@ -120,7 +130,7 @@ func ParseTask(raw string) Task {
 	}
 
 	// Handles the case where only one date is given
-	if task.CreationDate == EmptyDate && task.CompletionDate != EmptyDate {
+	if time.Time.IsZero(task.CreationDate) && !time.Time.IsZero(task.CompletionDate) {
 		task.CreationDate = task.CompletionDate
 		task.CompletionDate = EmptyDate
 	}
@@ -134,4 +144,9 @@ func ParseTask(raw string) Task {
 	task.DueDate, _ = time.Parse(dateLayout, due)
 
 	return task
+}
+
+func SortByDate(tasks []Task) []Task {
+	sort.Sort(ByDate(tasks))
+	return tasks
 }

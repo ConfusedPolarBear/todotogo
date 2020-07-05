@@ -8,7 +8,7 @@ import (
 	"time"
 	"fmt"
 
-	"./pkg/todo"
+	"github.com/ConfusedPolarBear/todotogo/pkg/todo"
 )
 
 func getMessage(task string, prop string, expect interface{}, actual interface{}) string {

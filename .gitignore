@@ -1,0 +1,8 @@
+# Output binary
+todo
+
+.vscode/
+
+# Todo files and backups
+*.txt
+*.bak
