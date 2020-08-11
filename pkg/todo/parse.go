@@ -26,7 +26,6 @@ type Task struct {
 var EmptyDate = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
 
 type ByDate []Task
-
 func (a ByDate) Less(i, j int) bool {
 	lhs, rhs := a[i], a[j]
 	return lhs.CreationDate.Before(rhs.CreationDate)
