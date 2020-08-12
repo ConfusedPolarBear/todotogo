@@ -22,20 +22,22 @@ import (
 	due:saturday
 	due:sat
 	
- * rm/r			delete task X
- * archive/ar	move all completed tasks to filename-archive.txt
- * edit/e		save the description to a temp file, exec editor and save
+ * Commands:
+ 	archive/ar	move all completed tasks to filename-archive.txt
+ 	edit/e		save the description to a temp file, exec editor and save
 
- Sort completed tasks at the bottom
-
- * Implemented
- * add/a		add new task
- * list/l		list current tasks
- * do/d			mark task X as done
-
+ * Output cleanup:
+	Sort completed tasks at the bottom
+ 
  * Other potential functions:
- * find/f - loads the contents in multiselect fzf OR an interactive prompt that searches for the given substring
- * With no argument, incomplete tasks from 1-6 days ago should be displayed along with tasks for the next 7 days up to X in each direction
+ 	find/f - loads the contents in multiselect fzf OR an interactive prompt that searches for the given substring
+ 	With no argument, incomplete tasks from 1-6 days ago should be displayed along with tasks for the next 7 days up to X in each direction
+
+ * ============ Implemented ============
+	add/a		add new task
+	list/l		list current tasks
+ 	do/d		mark task X as done
+ 	rm/r		delete task X
  */
 
 func main() {
@@ -83,19 +85,32 @@ func main() {
 
 	} else if command == "do" || command == "d" {
 		provided, numbers := numbersToTasks(flag.Args()[1:], tasks)
-		
-		log.Printf("Marking the following tasks as completed:")
-		listNumberedTasks(provided, numbers)
-		
+
 		backupOriginal(backup, filename, raw)
+		
+		log.Printf("Marked the following tasks as complete:")
+		listNumberedTasks(provided, numbers)
 
 		for _, task := range numbers {
-			// log.Printf("marking number %d as complete", task)
 			tasks[task].Completed = true
 		}
 
 		writeTasks(filename, tasks)
 
+	} else if command == "rm" || command == "r" {
+		provided, numbers := numbersToTasks(flag.Args()[1:], tasks)
+
+		backupOriginal(backup, filename, raw)
+		
+		log.Printf("Removed the following tasks:")
+		listNumberedTasks(provided, numbers)
+
+		for _, task := range numbers {
+			tasks[task].Deleted = true
+		}
+
+		writeTasks(filename, tasks)
+	
 	} else {
 		log.Printf("Unknown subcommand %s", command)
 		printHelp()
@@ -128,6 +143,10 @@ func writeTasks(filename string, tasks []todo.Task) {
 	contents := ""
 
 	for _, task := range tasks {
+		if task.Deleted {
+			continue
+		}
+
 		contents += fmt.Sprintf("%s\n", task)
 	}
 
@@ -156,8 +175,6 @@ func numbersToTasks(numbers []string, tasks []todo.Task) ([]todo.Task, []int) {
 		// Subtract 1 from the task number since listTasks adds 1
 		longIndex, err := strconv.ParseInt(i, 10, 32)
 		index := int(longIndex) - 1
-
-		// log.Printf("Parsed task number %d", index)
 
 		if index < 0 || index > len(tasks) || err != nil {
 			log.Fatalf("Error: cannot find task with index %d", index)

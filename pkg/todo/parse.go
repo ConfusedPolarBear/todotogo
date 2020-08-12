@@ -12,7 +12,7 @@ import (
 )
 
 type Task struct {
-	Completed      bool		// If this task is completed
+	Completed      bool			// If this task is completed
 	Priority       string		// Priority for this task if set
 	CompletionDate time.Time	// Date this task was completed
 	CreationDate   time.Time	// Date this task was created
@@ -21,6 +21,7 @@ type Task struct {
 	// Contexts       []string		// All contexts in the task description
 	DueDate        time.Time	// Key value pair holding the due date for this task
 	// Data           map[string]string	// All key value pairs in the task
+	Deleted        bool			// If the task was deleted (exclude the task from the list)
 }
 
 var EmptyDate = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -152,6 +153,8 @@ func ParseTask(raw string) Task {
 	due := dueRegex.FindString(raw)
 	due = strings.ReplaceAll(due, "due:", "")
 	task.DueDate, _ = time.Parse(dateLayout, due)
+
+	task.Deleted = false
 
 	return task
 }

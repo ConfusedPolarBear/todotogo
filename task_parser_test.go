@@ -53,6 +53,7 @@ func TestFullTask(t *testing.T) {
 		Priority: "C",
 		Description: "priority C +test due:2020-07-01",
 		DueDate: time.Date(2020, 7, 1, 0, 0, 0, 0, time.UTC),
+		Deleted: false,
 	}, t)
 }
 
@@ -62,6 +63,7 @@ func TestFullTaskComplete(t *testing.T) {
 		Priority: "C",
 		Description: "priority C +test due:2020-07-01",
 		DueDate: time.Date(2020, 7, 1, 0, 0, 0, 0, time.UTC),
+		Deleted: false,
 	}, t)
 }
 
@@ -73,6 +75,7 @@ func TestCompleteWithDates(t *testing.T) {
 		DueDate: time.Date(2016, 5, 30, 0, 0, 0, 0, time.UTC),
 		CompletionDate: time.Date(2016, 5, 20, 0, 0, 0, 0, time.UTC),
 		CreationDate: time.Date(2016, 4, 30, 0, 0, 0, 0, time.UTC),
+		Deleted: false,
 	}, t)
 }
 
@@ -84,5 +87,6 @@ func TestOnlyCreationDate(t *testing.T) {
 		DueDate: time.Date(2020, 3, 26, 0, 0, 0, 0, time.UTC),
 		CompletionDate: time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC),
 		CreationDate: time.Date(2020, 3, 20, 0, 0, 0, 0, time.UTC),
+		Deleted: false,
 	}, t)
 }
