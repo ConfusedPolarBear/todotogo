@@ -4,12 +4,14 @@
 package main
 
 import (
-	"io/ioutil"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
-	"strings"
+	"os"
+	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ConfusedPolarBear/todotogo/pkg/todo"
@@ -21,9 +23,6 @@ import (
 	due:tomorrow
 	due:saturday
 	due:sat
-	
- * Commands:
- 	edit/e		save the description to a temp file, exec editor and save
 
  * Output cleanup:
 	Sort completed tasks at the bottom
@@ -38,6 +37,7 @@ import (
  	do/d		mark task X as done
  	rm/r		delete task X
  	archive/ar	move all completed tasks to filename-done.txt
+ 	edit/e		save the description to a temp file, exec editor and save
  */
 
  type Tasks = []todo.Task
@@ -125,6 +125,27 @@ func main() {
 		writeTasks(archiveName, archived)
 		writeTasks(filename, remaining)
 
+	} else if command == "edit" || command == "e" {
+		provided := strings.Fields(extra)
+		if len(provided) == 0 {
+			log.Fatalf("You must provide at least one task number")
+		}
+
+		backupOriginal(backup, filename)
+
+		for index, raw := range provided {
+			i, _ := strconv.ParseInt(raw, 10, 32)
+			i -= 1
+
+			log.Printf("Editing task %d/%d (%d): %s", index + 1, len(provided), i + 1, tasks[i])
+			new := editTask(tasks[i].String())
+			log.Printf("New contents of task %d: %s", i + 1, new)
+
+			tasks[i] = todo.ParseTask(new)
+		}
+
+		writeTasks(filename, tasks)
+
 	} else {
 		log.Printf("Unknown subcommand %s", command)
 		printHelp()
@@ -136,8 +157,42 @@ func printHelp() {
 	log.Printf("[a]dd:     Adds new task")
 	log.Printf("[ar]chive: Moves all completed tasks to FILENAME-done.txt")
 	log.Printf("[d]o:      Marks the task(s) as complete")
+	log.Printf("[e]dit:    Interactively edit the provided tasks")
 	log.Printf("[l]ist:    Lists all tasks (default if no action is specified)")
 	log.Printf("[u]ndo:    Marks the task(s) as incomplete")
+}
+
+func editTask(original string) string {
+	// Create a temporary file to hold the task
+	file, tmpErr := ioutil.TempFile("/tmp", "task.")
+	if tmpErr != nil {
+			log.Fatalf("Unable to create temp file: %s", tmpErr)
+	}
+	tmp := file.Name()
+	defer os.Remove(tmp)
+
+	// Write out the contents of the task
+	if err := ioutil.WriteFile(tmp, []byte(original), 0600); err != nil {
+		log.Fatalf("Unable to write to temp file: %s", err)
+	}
+
+	// Execute the default editor
+	cmd := exec.Command("editor", tmp)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		log.Fatalf("Unable to execute editor: %s", err)
+	}
+
+	// Read back the contents of the file and return the processed output
+	raw, err := ioutil.ReadFile(tmp)
+	if err != nil {
+		log.Fatalf("Unable to open %s: %s", tmp, err)
+	}
+	contents := strings.ReplaceAll(string(raw), "\n", " ")
+
+	return contents
 }
 
 func backupOriginal(enabled bool, filename string) {
@@ -210,7 +265,7 @@ func listNumberedTasks(tasks Tasks, numbers []int) {
 	}
 }
 
-// rawNumbers is a string of space seperated numbers ("1 2 6") and returns the tasks that correspond to those numbers.
+// rawNumbers is a string of space seperated numbers ("1 2 6") and returns the tasks that correspond to those numbers
 func numbersToTasks(rawNumbers string, tasks Tasks, msg string) (Tasks, []int) {
 	var ret Tasks
 	var parsed []int

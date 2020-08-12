@@ -4,9 +4,9 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 	"time"
-	"fmt"
 
 	"github.com/ConfusedPolarBear/todotogo/pkg/todo"
 )
