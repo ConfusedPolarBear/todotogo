@@ -23,15 +23,15 @@ import (
 	due:sat
 	
  * rm/r			delete task X
- * do/d			mark task X as done
  * archive/ar	move all completed tasks to filename-archive.txt
  * edit/e		save the description to a temp file, exec editor and save
 
  Sort completed tasks at the bottom
 
  * Implemented
- * add/a
- * list/l
+ * add/a		add new task
+ * list/l		list current tasks
+ * do/d			mark task X as done
 
  * Other potential functions:
  * find/f - loads the contents in multiselect fzf OR an interactive prompt that searches for the given substring
@@ -43,13 +43,11 @@ func main() {
 
 	// Parse all flags
 	filenameFlag := flag.String("f", "todo.txt", "Input filename")
-	// outputFlag := flag.String("o", "", "Output filename")
 	autoBackupFlag := flag.Bool("b", false, "Disables automatic backup. (dangerous!)")
 	
 	flag.Parse()
 
 	filename := *filenameFlag
-	// outputFilename := *outputFlag
 	backup := !(*autoBackupFlag)
 	command := flag.Arg(0)		// optional command (add, rm, etc.)
 
@@ -59,6 +57,7 @@ func main() {
 		log.Fatalf("Unable to open %s: %s", filename, err)
 	}
 	tasks := todo.ParseAll(string(raw))
+	tasks = todo.SortByDate(tasks)
 
 	if command == "help" || command == "h" {
 		printHelp()
@@ -77,11 +76,9 @@ func main() {
 
 		backupOriginal(backup, filename, raw)
 
-		/*if outputFilename != "" {
-			filename = outputFilename
-		}*/
+		tasks = append(tasks, task)
+		writeTasks(filename, tasks)
 
-		appendTask(filename, raw, task)
 		log.Printf("Successfully added task %s", task)
 
 	} else if command == "do" || command == "d" {
@@ -93,8 +90,11 @@ func main() {
 		backupOriginal(backup, filename, raw)
 
 		for _, task := range numbers {
-			log.Printf("marking number %d as complete", task)
+			// log.Printf("marking number %d as complete", task)
+			tasks[task].Completed = true
 		}
+
+		writeTasks(filename, tasks)
 
 	} else {
 		log.Printf("Unknown subcommand %s", command)
@@ -104,7 +104,7 @@ func main() {
 
 func printHelp() {
 	log.Printf("Available commands:")
-	log.Printf("[l]ist: List all tasks")
+	log.Printf("[l]ist: List all tasks (default if no action is specified)")
 	log.Printf("[a]dd:  Add new task")
 	log.Printf("[d]o:   Marks the task(s) as completed")
 }
@@ -124,22 +124,23 @@ func backupOriginal(enabled bool, filename string, contents []byte) {
 	}
 }
 
-func appendTask(filename string, original []byte, task todo.Task) {
-	contents := string(original)
-	contents += task.String() + "\n"
+func writeTasks(filename string, tasks []todo.Task) {
+	contents := ""
+
+	for _, task := range tasks {
+		contents += fmt.Sprintf("%s\n", task)
+	}
 
 	ioutil.WriteFile(filename, []byte(contents), 0644)
 }
 
 func listTasks(tasks []todo.Task) {
-	todo.SortByDate(tasks)
 	for number, task := range tasks {
 		fmt.Printf("%03d %s\n", number + 1, task)
 	}
 }
 
 func listNumberedTasks(tasks []todo.Task, numbers []int) {
-	todo.SortByDate(tasks)
 	for i, task := range tasks {
 		fmt.Printf("%03d %s\n", numbers[i] + 1, task)
 	}
@@ -156,7 +157,7 @@ func numbersToTasks(numbers []string, tasks []todo.Task) ([]todo.Task, []int) {
 		longIndex, err := strconv.ParseInt(i, 10, 32)
 		index := int(longIndex) - 1
 
-		log.Printf("Parsed task number %d", index)
+		// log.Printf("Parsed task number %d", index)
 
 		if index < 0 || index > len(tasks) || err != nil {
 			log.Fatalf("Error: cannot find task with index %d", index)

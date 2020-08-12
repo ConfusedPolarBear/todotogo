@@ -28,7 +28,18 @@ var EmptyDate = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
 type ByDate []Task
 func (a ByDate) Less(i, j int) bool {
 	lhs, rhs := a[i], a[j]
-	return lhs.CreationDate.Before(rhs.CreationDate)
+	before := lhs.DueDate.Before(rhs.DueDate)
+
+	if time.Time.IsZero(lhs.DueDate) || time.Time.IsZero(rhs.DueDate) {
+		before = lhs.CreationDate.Before(rhs.CreationDate)
+	}
+
+	// If both tasks have the same completion state, sort them by relative dates
+	if lhs.Completed == rhs.Completed {
+		return before
+	} else {
+		return true
+	}
 }
 func (a ByDate) Len() int  { return len(a) }
 func (a ByDate) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
@@ -145,7 +156,7 @@ func ParseTask(raw string) Task {
 	return task
 }
 
-func SortByDate(tasks []Task) []Task {
-	sort.Sort(ByDate(tasks))
-	return tasks
+func SortByDate(raw []Task) []Task {
+	sort.Sort(ByDate(raw))
+	return raw
 }
