@@ -106,7 +106,7 @@ func TestNumberedTasks(t *testing.T) {
 	tasks = append(tasks, todo.ParseTask("2020-08-11 (C) junk task 4 +asdfasdfasdf tag:asdf"))
 	tasks = append(tasks, valid[2])
 
-	selected, indexes := numbersToTasks([]string{ "2", "5", "7" }, tasks)
+	selected, indexes := numbersToTasks("2 5 7", tasks, "")
 	if len(selected) != len(indexes) || len(selected) != 3 {
 		t.Errorf("Error testing numbered tasks: Expected length of (3, 3) but got (%d, %d)", len(selected), len(indexes))
 	}
