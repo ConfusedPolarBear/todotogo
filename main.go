@@ -166,7 +166,6 @@ func listNumberedTasks(tasks []todo.Task, numbers []int) {
 }
 
 // This function accepts a slice of strings { "1", "2", "6" } and returns the tasks that correspond to those numbers.
-// TODO: unit test this
 func numbersToTasks(numbers []string, tasks []todo.Task) ([]todo.Task, []int) {
 	var ret []todo.Task
 	var parsed []int

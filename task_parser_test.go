@@ -90,3 +90,30 @@ func TestOnlyCreationDate(t *testing.T) {
 		Deleted: false,
 	}, t)
 }
+
+func TestNumberedTasks(t *testing.T) {
+	var valid, tasks []todo.Task
+
+	valid = append(valid, todo.ParseTask("2020-08-11 first valid task"))
+	valid = append(valid, todo.ParseTask("2020-08-11 second +valid task"))
+	valid = append(valid, todo.ParseTask("2020-08-11 final +valid task due:1970-01-02"))
+
+	tasks = append(tasks, todo.ParseTask("2020-08-11 junk task 1 tag:asdf"))
+	tasks = append(tasks, valid[0])
+	tasks = append(tasks, todo.ParseTask("2020-08-11 junk task 2 tag:asdf2"))
+	tasks = append(tasks, todo.ParseTask("2020-08-11 (A) junk task 3 tag:asdf"))
+	tasks = append(tasks, valid[1])
+	tasks = append(tasks, todo.ParseTask("2020-08-11 (C) junk task 4 +asdfasdfasdf tag:asdf"))
+	tasks = append(tasks, valid[2])
+
+	selected, indexes := numbersToTasks([]string{ "2", "5", "7" }, tasks)
+	if len(selected) != len(indexes) || len(selected) != 3 {
+		t.Errorf("Error testing numbered tasks: Expected length of (3, 3) but got (%d, %d)", len(selected), len(indexes))
+	}
+
+	for i, task := range selected {
+		if(task != valid[i]) {
+			t.Errorf(getMessage(valid[i].String(), "numbered tasks", valid[i].String(), task.String()))
+		}
+	}
+}
