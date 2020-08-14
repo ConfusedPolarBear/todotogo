@@ -66,7 +66,7 @@ func main() {
 	}
 
 	// Parse initial task list
-	tasks := loadTasks(filename)
+	tasks := loadTasks(filename, true)
 
 	if command == "help" || command == "h" {
 		printHelp()
@@ -106,7 +106,7 @@ func main() {
 
 	} else if command == "archive" || command == "ar" {
 		archiveName := strings.ReplaceAll(filename, ".txt", "-done.txt")
-		archived := loadTasks(archiveName)
+		archived := loadTasks(archiveName, false)
 		var remaining Tasks
 
 		backupOriginal(backup, filename)
@@ -230,11 +230,16 @@ func markTasks(input string, tasks Tasks, complete bool) {
 	writeTasks(filename, tasks)
 }
 
-func loadTasks(filename string) Tasks {
+func loadTasks(filename string, fatal bool) Tasks {
 	raw, err := ioutil.ReadFile(filename)
 	if err != nil {
-		log.Fatalf("Unable to open %s: %s", filename, err)
+		if fatal {
+			log.Fatalf("Unable to open %s: %s", filename, err)
+		} else {
+			raw = []byte{}
+		}
 	}
+
 	tasks := todo.ParseAll(string(raw))
 	return todo.SortByDate(tasks)
 }
