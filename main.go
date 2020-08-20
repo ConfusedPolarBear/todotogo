@@ -27,10 +27,6 @@ import (
 
  * Output cleanup:
 	Sort completed tasks at the bottom
- 
- * Other potential functions:
- 	find/f - loads the contents in multiselect fzf OR an interactive prompt that searches for the given substring
- 	With no argument, incomplete tasks from 1-6 days ago should be displayed along with tasks for the next 7 days up to X in each direction
 
  * ============ Implemented ============
 	add/a		add new task
@@ -38,7 +34,10 @@ import (
  	do/d		mark task X as done
  	rm/r		delete task X
  	archive/ar	move all completed tasks to filename-done.txt
- 	edit/e		save the description to a temp file, exec editor and save
+	edit/e		save the description to a temp file, exec editor and save
+	find/f - loads the contents in multiselect fzf OR an interactive prompt that searches for the given substring
+
+ 	With no argument, incomplete tasks from 1-6 days ago should be displayed along with tasks for the next 7 days up to X in each direction
  */
 
  type Tasks = []todo.Task
@@ -103,7 +102,18 @@ func main() {
 		}
 
 	} else if command == "list" || command == "l" {
-		listTasks(tasks)
+		fmt.Println(listTasks(tasks))
+
+	} else if command == "find" || command == "f" {
+		oneLine := ""
+		
+		sel := findTask(tasks)
+		for _, t := range sel {
+			fmt.Printf("%03d %s\n", t + 1, tasks[t])
+			oneLine += fmt.Sprintf("%d ", t + 1)
+		}
+
+		fmt.Printf("Selected: %s", oneLine)
 
 	} else if command == "add" || command == "a" {
 		task := todo.ParseTask(extra)
@@ -226,6 +236,63 @@ func editTask(original string) string {
 	return contents
 }
 
+func findTask(tasks Tasks) []int {
+	// Create a temporary file to hold all tasks
+	file, tmpErr := ioutil.TempFile("/tmp", "task.")
+	if tmpErr != nil {
+			log.Fatalf("Unable to create temp file: %s", tmpErr)
+	}
+	tmp := file.Name()
+	defer os.Remove(tmp)
+
+	all := listTasks(tasks)
+
+	// Write out the contents of the task
+	if err := ioutil.WriteFile(tmp, []byte(all), 0600); err != nil {
+		log.Fatalf("Unable to write to temp file: %s", err)
+	}
+
+	// Execute fzf which prints out selections to stdout
+	cmd := exec.Command("fzf", "-m", "--tac")
+	cmd.Stdin = file
+	cmd.Stderr = os.Stderr
+	stdout, pipeErr := cmd.StdoutPipe()
+	if pipeErr != nil {
+		log.Fatalf("Unable to setup stdout pipe: %s", pipeErr)
+	}
+
+	if err := cmd.Start(); err != nil {
+		log.Fatalf("Unable to start fzf: %s", err)
+	}
+
+	raw, rawErr := ioutil.ReadAll(stdout)
+	if rawErr != nil {
+		log.Fatalf("Unable to get fzf selections: %s", rawErr)
+	}
+
+	if err := cmd.Wait(); err != nil {
+		log.Fatalf("Unable to wait for fzf: %s", err)
+	}
+
+	var numbers []int
+	lines := strings.Split(string(raw), "\n")
+	for _, l := range lines {
+		f := strings.Fields(l)
+		if len(f) == 0 {
+			continue
+		}
+
+		current, err := strconv.ParseInt(f[0], 10, 32)
+		if err != nil {
+			log.Fatalf("Unable to convert %s to int: %s", f[0], err)
+		}
+
+		numbers = append(numbers, int(current) - 1)
+	}
+
+	return numbers
+}
+
 func backupOriginal(enabled bool, filename string) {
 	if !enabled {
 		return
@@ -289,10 +356,12 @@ func writeTasks(filename string, tasks Tasks) {
 	ioutil.WriteFile(filename, []byte(contents), 0644)
 }
 
-func listTasks(tasks Tasks) {
+func listTasks(tasks Tasks) string {
+	ret := ""
 	for number, task := range tasks {
-		fmt.Printf("%03d %s\n", number + 1, task)
+		ret += fmt.Sprintf("%03d %s\n", number + 1, task)
 	}
+	return ret
 }
 
 func listNumberedTasks(tasks Tasks, numbers []int) {
