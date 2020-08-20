@@ -4,6 +4,8 @@
 package todo
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"regexp"
 	"sort"
@@ -22,6 +24,7 @@ type Task struct {
 	DueDate        time.Time	// Key value pair holding the due date for this task
 	// Data           map[string]string	// All key value pairs in the task
 	Deleted        bool			// If the task was deleted (exclude the task from the list)
+	Hash           string		// Unique identifier for this task
 }
 
 var EmptyDate = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -29,18 +32,7 @@ var EmptyDate = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
 type ByDate []Task
 func (a ByDate) Less(i, j int) bool {
 	lhs, rhs := a[i], a[j]
-	before := lhs.DueDate.Before(rhs.DueDate)
-
-	if time.Time.IsZero(lhs.DueDate) || time.Time.IsZero(rhs.DueDate) {
-		before = lhs.CreationDate.Before(rhs.CreationDate)
-	}
-
-	// If both tasks have the same completion state, sort them by relative dates
-	if lhs.Completed == rhs.Completed {
-		return before
-	} else {
-		return true
-	}
+	return lhs.DueDate.Before(rhs.DueDate)
 }
 func (a ByDate) Len() int  { return len(a) }
 func (a ByDate) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
@@ -100,8 +92,9 @@ func ParseTask(raw string) Task {
 		return task
 	}
 
-	dateRegex := regexp.MustCompile("^[0-9]{4}-[0-9]{2}-[0-9]{2}")	// 0000-00-00
-	dueRegex := regexp.MustCompile("due:[0-9]{4}-[0-9]{2}-[0-9]{2}")	// due:0000-00-00
+	dateFormat := "[0-9]{4}-[0-9]{2}-[0-9]{2}"
+	dateRegex := regexp.MustCompile("^" + dateFormat)	// 0000-00-00
+	dueRegex := regexp.MustCompile("due:" + dateFormat)	// due:0000-00-00
 	priorityRegex := regexp.MustCompile("^\\([A-Z]\\)")	// ([A-Z])
 	dateLayout := "2006-01-02"
 
@@ -155,6 +148,10 @@ func ParseTask(raw string) Task {
 	task.DueDate, _ = time.Parse(dateLayout, due)
 
 	task.Deleted = false
+
+	// Calculate hash
+	hash := sha256.Sum256([]byte(task.String()))
+	task.Hash = hex.EncodeToString(hash[:])
 
 	return task
 }

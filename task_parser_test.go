@@ -12,7 +12,7 @@ import (
 )
 
 func getMessage(task string, prop string, expect interface{}, actual interface{}) string {
-	return fmt.Sprintf("Task %s failed (%s).\nExpected: %v\nActual:   %v", task, prop, expect, actual)
+	return fmt.Sprintf("Task \"%s\" failed (%s).\nExpected: %v\nActual:   %v", task, prop, expect, actual)
 }
 
 func areTasksEqual(rawTask string, expected *todo.Task, t *testing.T) {
@@ -42,6 +42,10 @@ func areTasksEqual(rawTask string, expected *todo.Task, t *testing.T) {
 		t.Errorf(getMessage(rawTask, "due date", expected.DueDate, actual.DueDate))
 	}
 
+	if expected.Hash != actual.Hash {
+		t.Errorf(getMessage(rawTask, "hash", expected.Hash, actual.Hash))
+	}
+
 	if rawTask != expected.String() {
 		t.Errorf(getMessage(rawTask, "serialization", rawTask, expected))
 	}
@@ -54,6 +58,7 @@ func TestFullTask(t *testing.T) {
 		Description: "priority C +test due:2020-07-01",
 		DueDate: time.Date(2020, 7, 1, 0, 0, 0, 0, time.UTC),
 		Deleted: false,
+		Hash: "d7b12180ca7f611e0da354e6b2cf8eac03d14337dae32815dacab6ef962556cf",
 	}, t)
 }
 
@@ -64,6 +69,7 @@ func TestFullTaskComplete(t *testing.T) {
 		Description: "priority C +test due:2020-07-01",
 		DueDate: time.Date(2020, 7, 1, 0, 0, 0, 0, time.UTC),
 		Deleted: false,
+		Hash: "8585f8b77bc59ae94ca874872c0bd964ce2ddb7f9916412680fdbd9ddd5bac7d",
 	}, t)
 }
 
@@ -76,6 +82,7 @@ func TestCompleteWithDates(t *testing.T) {
 		CompletionDate: time.Date(2016, 5, 20, 0, 0, 0, 0, time.UTC),
 		CreationDate: time.Date(2016, 4, 30, 0, 0, 0, 0, time.UTC),
 		Deleted: false,
+		Hash: "6b44b2a3a47f9cb66b9fee123a42052e7d4f3ebedd3ef3f96dab0b88d0ff2aed",
 	}, t)
 }
 
@@ -88,6 +95,7 @@ func TestOnlyCreationDate(t *testing.T) {
 		CompletionDate: time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC),
 		CreationDate: time.Date(2020, 3, 20, 0, 0, 0, 0, time.UTC),
 		Deleted: false,
+		Hash: "22923561a0c012f499528c84668a5550459dfd94c625f44be4c5c2f4c1d541af",
 	}, t)
 }
 
@@ -112,8 +120,10 @@ func TestNumberedTasks(t *testing.T) {
 	}
 
 	for i, task := range selected {
-		if(task != valid[i]) {
-			t.Errorf(getMessage(valid[i].String(), "numbered tasks", valid[i].String(), task.String()))
+		lhs := task.String()
+		rhs := valid[i].String()
+		if(lhs != rhs) {
+			t.Errorf(getMessage(rhs, "numbered tasks", rhs, lhs))
 		}
 	}
 }

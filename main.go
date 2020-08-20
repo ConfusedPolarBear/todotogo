@@ -4,6 +4,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -71,7 +72,37 @@ func main() {
 	if command == "help" || command == "h" {
 		printHelp()
 
-	} else if command == "list" || command == "l" || command == "" {
+	} else if command == "" {
+		// Quick list: show tasks due a week ago or from now
+		n := time.Now()
+		lower := n.AddDate(0, 0, -7)
+		upper := n.AddDate(0, 0, 7)
+
+		// Insert a visual marker to denote where before tasks end and after tasks start
+		marker := fmt.Sprintf("============================== TODAY ============================== due:%s", n.Format("2006-01-02"))
+		tasks = append(tasks, todo.ParseTask(marker))
+
+		// Copy the slice so the indexes are correct
+		tmp := make(Tasks, len(tasks))
+		copy(tmp, tasks)
+
+		for _, task := range todo.SortByDate(tmp) {
+			if time.Time.IsZero(task.DueDate) || task.Completed {
+				continue
+			} else if !(lower.Before(task.DueDate) && task.DueDate.Before(upper)) {
+				continue
+			}
+
+			// Lookup the unsorted task number
+			number, _, err := hashToTask(tasks, task.Hash)
+			if err != nil {
+				log.Fatalf("Unable to find task with hash %s", task.Hash)
+			}
+
+			fmt.Printf("%03d %s\n", number + 1, task)
+		}
+
+	} else if command == "list" || command == "l" {
 		listTasks(tasks)
 
 	} else if command == "add" || command == "a" {
@@ -241,7 +272,7 @@ func loadTasks(filename string, fatal bool) Tasks {
 	}
 
 	tasks := todo.ParseAll(string(raw))
-	return todo.SortByDate(tasks)
+	return tasks
 }
 
 func writeTasks(filename string, tasks Tasks) {
@@ -298,4 +329,14 @@ func numbersToTasks(rawNumbers string, tasks Tasks, msg string) (Tasks, []int) {
 	}
 
 	return ret, parsed
+}
+
+func hashToTask(tasks Tasks, needle string) (int, todo.Task, error) {
+	for i, task := range tasks {
+		if task.Hash == needle {
+			return i, task, nil
+		}
+	}
+
+	return -1, todo.Task{}, errors.New("No task found with provided identifier")
 }
