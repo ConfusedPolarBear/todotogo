@@ -20,8 +20,6 @@ import (
 
 /* MVP Functions to implement:
  * Date formats to support:
-	due:today
-	due:tomorrow
 	due:saturday
 	due:sat
 
@@ -37,7 +35,9 @@ import (
 	edit/e		save the description to a temp file, exec editor and save
 	find/f - loads the contents in multiselect fzf OR an interactive prompt that searches for the given substring
 
- 	With no argument, incomplete tasks from 1-6 days ago should be displayed along with tasks for the next 7 days up to X in each direction
+	With no argument, incomplete tasks from 1-6 days ago should be displayed along with tasks for the next 7 days up to X in each direction
+	
+	Basic relative dates (today & tomorrow)
  */
 
  type Tasks = []todo.Task
@@ -117,6 +117,17 @@ func main() {
 		fmt.Printf("Selected: %s", oneLine)
 
 	} else if command == "add" || command == "a" {
+		// Handle simple relative dates
+		original := extra
+
+		n := time.Now()
+		extra = replaceRelativeDate(extra, "due:today", n)
+		extra = replaceRelativeDate(extra, "due:tomorrow", n.AddDate(0, 0, 1))
+
+		if original != extra {
+			log.Printf("Rewrote task from \"%s\" to \"%s\"", original, extra)
+		}
+
 		task := todo.ParseTask(extra)
 		task.CreationDate = time.Now()
 
@@ -192,6 +203,14 @@ func main() {
 		log.Printf("Unknown subcommand %s", command)
 		printHelp()
 	}
+}
+
+func replaceRelativeDate(haystack, needle string, date time.Time) string {
+	if strings.Contains(haystack, needle) {
+		return strings.ReplaceAll(haystack, needle, "due:" + date.Format("2006-01-02"))
+	}
+
+	return haystack
 }
 
 func printHelp() {
