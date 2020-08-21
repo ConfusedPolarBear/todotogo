@@ -71,14 +71,15 @@ func main() {
 	if command == "help" || command == "h" {
 		printHelp()
 
-	} else if command == "" {
+	} else if command == "quick" || command == "q" || command == "" {
 		// Quick list: show tasks due a week ago or from now
 		n := time.Now()
 		lower := n.AddDate(0, 0, -7)
 		upper := n.AddDate(0, 0, 7)
+		n = n.AddDate(0, 0, -1)
 
 		// Insert a visual marker to denote where before tasks end and after tasks start
-		marker := fmt.Sprintf("============================== TODAY ============================== due:%s", n.Format("2006-01-02"))
+		marker := fmt.Sprintf("+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+ due:%s", n.Format("2006-01-02"))
 		tasks = append(tasks, todo.ParseTask(marker))
 
 		// Copy the slice so the indexes are correct
@@ -195,12 +196,15 @@ func main() {
 
 func printHelp() {
 	log.Printf("Available commands:")
-	log.Printf("[a]dd:     Adds new task")
-	log.Printf("[ar]chive: Moves all completed tasks to FILENAME-done.txt")
-	log.Printf("[d]o:      Marks the task(s) as complete")
-	log.Printf("[e]dit:    Interactively edit the provided tasks")
-	log.Printf("[l]ist:    Lists all tasks (default if no action is specified)")
-	log.Printf("[u]ndo:    Marks the task(s) as incomplete")
+	log.Printf("[a]dd      Adds new task")
+	log.Printf("[ar]chive  Moves all completed tasks to FILENAME-done.txt")
+	log.Printf("[d]o       Marks the task(s) as complete")
+	log.Printf("[e]dit     Interactively edit the provided task(s) in the default editor")
+	log.Printf("[f]ind     Interactively find task(s) with fzf")
+	log.Printf("[l]ist     Lists all tasks")
+	log.Printf("[q]uick    List tasks due in the previous and next seven days. Default action")
+	log.Printf("[r]m       Permanently deletes the provided task(s)")
+	log.Printf("[u]ndo     Marks the task(s) as incomplete")
 }
 
 func editTask(original string) string {
