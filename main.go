@@ -65,21 +65,25 @@ func main() {
 		extra = strings.Join(args[1:], " ")
 	}
 
-	// Parse initial task list
+	// Parse initial task list and save the current time
 	tasks := loadTasks(filename, true)
+	n := time.Now()
 
 	if command == "help" || command == "h" {
 		printHelp()
 
 	} else if command == "quick" || command == "q" || command == "" {
 		// Quick list: show tasks due a week ago or from now
-		n := time.Now()
 		lower := n.AddDate(0, 0, -7)
 		upper := n.AddDate(0, 0, 7)
-		n = n.AddDate(0, 0, -1)
 
-		// Insert a visual marker to denote where before tasks end and after tasks start
+		// Tasks above this are due today
 		marker := fmt.Sprintf("+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+ due:%s", n.Format("2006-01-02"))
+		tasks = append(tasks, todo.ParseTask(marker))
+		
+		// Tasks above this are in the past
+		n = n.AddDate(0, 0, -1)
+		marker = fmt.Sprintf("+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+ due:%s", n.Format("2006-01-02"))
 		tasks = append(tasks, todo.ParseTask(marker))
 
 		// Copy the slice so the indexes are correct
@@ -120,7 +124,6 @@ func main() {
 		// Handle simple relative dates
 		original := extra
 
-		n := time.Now()
 		extra = replaceRelativeDate(extra, "due:today", n)
 		extra = replaceRelativeDate(extra, "due:tomorrow", n.AddDate(0, 0, 1))
 
@@ -129,7 +132,7 @@ func main() {
 		}
 
 		task := todo.ParseTask(extra)
-		task.CreationDate = time.Now()
+		task.CreationDate = n
 
 		if extra == "" {
 			log.Fatalf("Error: you must specify a task")

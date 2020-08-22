@@ -28,11 +28,19 @@ type Task struct {
 }
 
 var EmptyDate = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
+const seperator = "+=+=+=+=+="
 
 type ByDate []Task
 func (a ByDate) Less(i, j int) bool {
 	lhs, rhs := a[i], a[j]
-	return lhs.DueDate.Before(rhs.DueDate)
+
+	// If the dates are equal, check if one side has the separator since it always goes at the end of that days' tasks
+	// Otherwise, just sort normally
+	if lhs.DueDate == rhs.DueDate {
+		return !strings.HasPrefix(lhs.Description, seperator)
+	} else {
+		return lhs.DueDate.Before(rhs.DueDate)
+	}
 }
 func (a ByDate) Len() int  { return len(a) }
 func (a ByDate) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
@@ -55,6 +63,11 @@ func (t Task) String() string {
 
 	if !time.Time.IsZero(t.CreationDate) {
 		creation = format(t.CreationDate) + " "
+	}
+
+	// Remove the due date from seperators
+	if strings.HasPrefix(t.Description, seperator) {
+		t.Description = strings.Fields(t.Description)[0]
 	}
 
 	return complete + priority + completion + creation + t.Description
